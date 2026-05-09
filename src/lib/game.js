@@ -52,25 +52,28 @@ function dropLine(copy, index) {
   return `${index + 1}. ${rarityEmoji[copy.card.rarity]} **${copy.card.groupName} ${copy.card.idolName}** (${copy.card.era}) • \\#${copy.serialNo}`;
 }
 
-export function buildDropEmbed(copies, authorId) {
-  return new EmbedBuilder()
-    .setTitle("Meteor Shower: Card Drop")
-    .setDescription([
-      `<@${authorId}> started a drop. Claim with buttons below.`,
-      "",
-      ...copies.map((copy, idx) => dropLine(copy, idx)),
-      "",
-      "Drop expires in 60 seconds."
-    ].join("\n"))
-    .setColor(0x6d9dff)
-    .setTimestamp();
+export function buildDropMessage(copies, authorId, expirySeconds) {
+  return [
+    `<@${authorId}> has encountered a meteor shower!`,
+    "",
+    ...copies.map((copy, idx) => dropLine(copy, idx)),
+    "",
+    copies.map((copy) => copy.card.imageUrl).join(" "),
+    "",
+    `Claim using buttons below. Expires in ${expirySeconds}s.`
+  ].join("\n");
 }
 
-export function buildDropButtons(dropId) {
+function buttonLabelForCopy(copy) {
+  const base = `${copy.card.idolName} #${copy.serialNo}`;
+  return base.length > 80 ? `${base.slice(0, 77)}...` : base;
+}
+
+export function buildDropButtons(dropId, copies) {
   return new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(`claim:${dropId}:1`).setLabel("Claim 1").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId(`claim:${dropId}:2`).setLabel("Claim 2").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId(`claim:${dropId}:3`).setLabel("Claim 3").setStyle(ButtonStyle.Primary)
+    new ButtonBuilder().setCustomId(`claim:${dropId}:1`).setLabel(buttonLabelForCopy(copies[0])).setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId(`claim:${dropId}:2`).setLabel(buttonLabelForCopy(copies[1])).setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId(`claim:${dropId}:3`).setLabel(buttonLabelForCopy(copies[2])).setStyle(ButtonStyle.Primary)
   );
 }
 

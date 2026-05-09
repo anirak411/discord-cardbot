@@ -5,8 +5,7 @@ import {
   Collection,
   REST,
   Routes,
-  Events,
-  EmbedBuilder
+  Events
 } from "discord.js";
 import { prisma } from "./lib/prisma.js";
 import * as drop from "./commands/drop.js";
@@ -16,6 +15,7 @@ import * as ping from "./commands/ping.js";
 const token = process.env.DISCORD_TOKEN;
 const clientId = process.env.CLIENT_ID;
 const guildId = process.env.GUILD_ID;
+const dropCooldownSeconds = Number(process.env.DROP_COOLDOWN_SECONDS ?? 45);
 
 if (!token || !clientId || !guildId) {
   console.error("Missing DISCORD_TOKEN, CLIENT_ID, or GUILD_ID in .env");
@@ -106,6 +106,15 @@ client.on(Events.InteractionCreate, async (interaction) => {
         update: {}
       });
 
+      const now = new Date();
+      if (user.lastDropAt) {
+        const next = new Date(user.lastDropAt.getTime() + dropCooldownSeconds * 1000);
+        if (now < next) {
+          const wait = Math.ceil((next.getTime() - now.getTime()) / 1000);
+          return { ok: false, msg: `Cooldown active. Try again in ${wait}s.` };
+        }
+      }
+
       await tx.drop.update({
         where: { id: dropId },
         data: { [claimField]: interaction.user.id }
@@ -117,6 +126,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
         include: { card: true }
       });
 
+      await tx.user.update({
+        where: { id: user.id },
+        data: { lastDropAt: now }
+      });
+
       const claimed = await tx.cardCopy.findUnique({
         where: { id: copyId },
         include: { card: true }
@@ -126,23 +140,19 @@ client.on(Events.InteractionCreate, async (interaction) => {
     });
 
     if (!result.ok) {
-      await interaction.reply({ content: result.msg, ephemeral: true });
+      await interaction.reply({ content: result.msg });
       return;
     }
 
-    const embed = new EmbedBuilder()
-      .setTitle("Card Claimed")
-      .setDescription(`You claimed **${result.claimed.card.groupName} ${result.claimed.card.idolName}** (${result.claimed.card.era}) • #${result.claimed.serialNo}`)
-      .setColor(0x90ee90)
-      .setTimestamp();
-
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply({
+      content: `<@${interaction.user.id}> claimed **#${result.claimed.serialNo} ${result.claimed.card.idolName}** (${result.claimed.card.groupName} - ${result.claimed.card.era})`
+    });
   } catch (err) {
     console.error(err);
     if (interaction.deferred || interaction.replied) {
-      await interaction.followUp({ content: "Something went wrong.", ephemeral: true });
+      await interaction.followUp({ content: "Something went wrong." });
     } else {
-      await interaction.reply({ content: "Something went wrong.", ephemeral: true });
+      await interaction.reply({ content: "Something went wrong." });
     }
   }
 });

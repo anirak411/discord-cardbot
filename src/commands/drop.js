@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from "discord.js";
 import { prisma } from "../lib/prisma.js";
-import { rollRarity, generateCopyByRarity, buildDropEmbed, buildDropButtons, ensureUser } from "../lib/game.js";
+import { rollRarity, generateCopyByRarity, buildDropMessage, buildDropButtons, ensureUser } from "../lib/game.js";
 
 const dropCooldownSeconds = Number(process.env.DROP_COOLDOWN_SECONDS ?? 45);
 const dropExpirySeconds = Number(process.env.DROP_EXPIRY_SECONDS ?? 60);
@@ -43,8 +43,8 @@ export async function execute(interaction) {
   });
 
   const message = await interaction.editReply({
-    embeds: [buildDropEmbed(copies, interaction.user.id)],
-    components: [buildDropButtons(drop.id)]
+    content: buildDropMessage(copies, interaction.user.id, dropExpirySeconds),
+    components: [buildDropButtons(drop.id, copies)]
   });
 
   await prisma.drop.update({ where: { id: drop.id }, data: { messageId: message.id } });
