@@ -5,7 +5,9 @@ import {
   Collection,
   REST,
   Routes,
-  Events
+  Events,
+  ActionRowBuilder,
+  ButtonBuilder
 } from "discord.js";
 import { prisma } from "./lib/prisma.js";
 import * as drop from "./commands/drop.js";
@@ -64,6 +66,12 @@ function slotCopyField(slot) {
   return "slot3CopyId";
 }
 
+function getClaimedUserIdForSlot(dropRecord, slot) {
+  if (slot === 1) return dropRecord.claimed1By;
+  if (slot === 2) return dropRecord.claimed2By;
+  return dropRecord.claimed3By;
+}
+
 client.once(Events.ClientReady, async (readyClient) => {
   console.log(`Logged in as ${readyClient.user.tag}`);
   await registerCommands();
@@ -92,6 +100,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
         return { ok: false, msg: "Drop expired." };
       }
 
+      if (
+        dropRecord.claimed1By === interaction.user.id ||
+        dropRecord.claimed2By === interaction.user.id ||
+        dropRecord.claimed3By === interaction.user.id
+      ) {
+        return { ok: false, msg: "You already claimed a card from this drop." };
+      }
+
       const claimField = claimUpdateField(slot);
       if (dropRecord[claimField]) {
         return { ok: false, msg: "That slot is already claimed." };
@@ -116,7 +132,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         }
       }
 
-      await tx.drop.update({
+      const updatedDrop = await tx.drop.update({
         where: { id: dropId },
         data: { [claimField]: interaction.user.id }
       });
@@ -137,7 +153,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         include: { card: true }
       });
 
-      return { ok: true, claimed };
+      return { ok: true, claimed, updatedDrop };
     });
 
     if (!result.ok) {
@@ -145,8 +161,28 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return;
     }
 
-    await interaction.reply({
-      content: `<@${interaction.user.id}> claimed **#${result.claimed.serialNo} ${result.claimed.card.idolName}** (${result.claimed.card.groupName} - ${result.claimed.card.era})`
+    const updatedRows = interaction.message.components.map((row) => {
+      const newRow = new ActionRowBuilder();
+      for (const component of row.components) {
+        const button = ButtonBuilder.from(component);
+        if (component.customId === interaction.customId) {
+          button.setDisabled(true);
+        }
+        newRow.addComponents(button);
+      }
+      return newRow;
+    });
+
+    const claimSummary = [1, 2, 3]
+      .map((s) => {
+        const userId = getClaimedUserIdForSlot(result.updatedDrop, s);
+        return userId ? `${s}: <@${userId}>` : `${s}: unclaimed`;
+      })
+      .join(" | ");
+
+    await interaction.update({
+      content: `${interaction.message.content}\n\n<@${interaction.user.id}> claimed **#${result.claimed.serialNo} ${result.claimed.card.idolName}** (${result.claimed.card.groupName} - ${result.claimed.card.era})\nClaims: ${claimSummary}`,
+      components: updatedRows
     });
   } catch (err) {
     console.error(err);
