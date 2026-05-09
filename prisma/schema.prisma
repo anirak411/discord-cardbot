@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  discordId    String    @unique
+  coins        Int       @default(0)
+  lastDropAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  copies       CardCopy[]
+}
+
+model Card {
+  id          Int       @id @default(autoincrement())
+  idolName    String
+  groupName   String
+  era         String
+  rarity      Rarity
+  imageUrl    String
+  createdAt   DateTime  @default(now())
+  copies      CardCopy[]
+}
+
+model CardCopy {
+  id          Int      @id @default(autoincrement())
+  serialNo    Int      @unique
+  ownerId     Int?
+  owner       User?    @relation(fields: [ownerId], references: [id])
+  cardId      Int
+  card        Card     @relation(fields: [cardId], references: [id])
+  obtainedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  dropSlot1   Drop[]   @relation("dropSlot1")
+  dropSlot2   Drop[]   @relation("dropSlot2")
+  dropSlot3   Drop[]   @relation("dropSlot3")
+}
+
+model Drop {
+  id          Int       @id @default(autoincrement())
+  channelId   String
+  messageId   String?   @unique
+  slot1CopyId Int
+  slot2CopyId Int
+  slot3CopyId Int
+  claimed1By  String?
+  claimed2By  String?
+  claimed3By  String?
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+
+  slot1Copy   CardCopy  @relation("dropSlot1", fields: [slot1CopyId], references: [id])
+  slot2Copy   CardCopy  @relation("dropSlot2", fields: [slot2CopyId], references: [id])
+  slot3Copy   CardCopy  @relation("dropSlot3", fields: [slot3CopyId], references: [id])
+}
+
+enum Rarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+  MYTHIC
+}
