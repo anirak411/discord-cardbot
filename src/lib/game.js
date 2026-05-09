@@ -36,8 +36,30 @@ export async function generateCopyByRarity(rarity) {
   }
 
   const selected = pool[Math.floor(Math.random() * pool.length)];
-  const maxSerial = await prisma.cardCopy.aggregate({ _max: { serialNo: true } });
-  const serialNo = (maxSerial._max.serialNo ?? 0) + 1;
+  const serialRanges = {
+    MYTHIC: [1, 150],
+    LEGENDARY: [151, 600],
+    EPIC: [601, 1600],
+    RARE: [1601, 4200],
+    COMMON: [4201, 9999]
+  };
+
+  const [minSerial, maxSerial] = serialRanges[rarity] ?? serialRanges.COMMON;
+  let serialNo = null;
+
+  for (let i = 0; i < 25; i += 1) {
+    const attempt = Math.floor(Math.random() * (maxSerial - minSerial + 1)) + minSerial;
+    const exists = await prisma.cardCopy.findUnique({ where: { serialNo: attempt } });
+    if (!exists) {
+      serialNo = attempt;
+      break;
+    }
+  }
+
+  if (serialNo === null) {
+    const globalMax = await prisma.cardCopy.aggregate({ _max: { serialNo: true } });
+    serialNo = (globalMax._max.serialNo ?? 0) + 1;
+  }
 
   return prisma.cardCopy.create({
     data: {
