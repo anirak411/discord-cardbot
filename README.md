@@ -1,4 +1,4 @@
-# K-pop CardBot Starter (Discord)
+# CardBot (Discord)
 
 Starter bot with:
 - `/drop` (3-card drop with rarity rolls)

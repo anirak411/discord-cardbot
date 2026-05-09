@@ -15,7 +15,7 @@ import * as ping from "./commands/ping.js";
 const token = process.env.DISCORD_TOKEN;
 const clientId = process.env.CLIENT_ID;
 const guildId = process.env.GUILD_ID;
-const dropCooldownSeconds = Number(process.env.DROP_COOLDOWN_SECONDS ?? 45);
+const claimCooldownSeconds = Number(process.env.CLAIM_COOLDOWN_SECONDS ?? 45);
 
 if (!token || !clientId || !guildId) {
   console.error("Missing DISCORD_TOKEN, CLIENT_ID, or GUILD_ID in .env");
@@ -107,11 +107,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
       });
 
       const now = new Date();
-      if (user.lastDropAt) {
-        const next = new Date(user.lastDropAt.getTime() + dropCooldownSeconds * 1000);
+      if (user.lastClaimAt) {
+        const next = new Date(user.lastClaimAt.getTime() + claimCooldownSeconds * 1000);
         if (now < next) {
           const wait = Math.ceil((next.getTime() - now.getTime()) / 1000);
-          return { ok: false, msg: `Cooldown active. Try again in ${wait}s.` };
+          return { ok: false, msg: `Claim cooldown active. Try again in ${wait}s.` };
         }
       }
 
@@ -128,7 +128,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       await tx.user.update({
         where: { id: user.id },
-        data: { lastDropAt: now }
+        data: { lastClaimAt: now }
       });
 
       const claimed = await tx.cardCopy.findUnique({

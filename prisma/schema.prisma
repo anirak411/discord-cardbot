@@ -12,6 +12,7 @@ model User {
   discordId    String    @unique
   coins        Int       @default(0)
   lastDropAt   DateTime?
+  lastClaimAt  DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   copies       CardCopy[]
