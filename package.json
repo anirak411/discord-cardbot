@@ -1,11 +1,12 @@
 {
-  "name": "kpop-cardbot-starter",
+  "name": "cardbot",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
+    "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
     "prisma:studio": "prisma studio",
@@ -14,9 +15,7 @@
   "dependencies": {
     "@prisma/client": "^5.22.0",
     "discord.js": "^14.17.3",
-    "dotenv": "^16.4.7"
-  },
-  "devDependencies": {
+    "dotenv": "^16.4.7",
     "prisma": "^5.22.0"
   }
 }

@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -22,7 +22,7 @@ model Card {
   idolName    String
   groupName   String
   era         String
-  rarity      Rarity
+  rarity      String
   imageUrl    String
   createdAt   DateTime  @default(now())
   copies      CardCopy[]
@@ -59,12 +59,4 @@ model Drop {
   slot1Copy   CardCopy  @relation("dropSlot1", fields: [slot1CopyId], references: [id])
   slot2Copy   CardCopy  @relation("dropSlot2", fields: [slot2CopyId], references: [id])
   slot3Copy   CardCopy  @relation("dropSlot3", fields: [slot3CopyId], references: [id])
-}
-
-enum Rarity {
-  COMMON
-  RARE
-  EPIC
-  LEGENDARY
-  MYTHIC
 }
