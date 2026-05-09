@@ -181,8 +181,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
       .join(" | ");
 
     await interaction.update({
-      content: `${interaction.message.content}\n\n<@${interaction.user.id}> claimed **#${result.claimed.serialNo} ${result.claimed.card.idolName}** (${result.claimed.card.groupName} - ${result.claimed.card.era})\nClaims: ${claimSummary}`,
+      content: `${interaction.message.content.split("\nClaims:")[0]}\nClaims: ${claimSummary}`,
       components: updatedRows
+    });
+
+    await interaction.channel.send({
+      content: `<@${interaction.user.id}> claimed **#${result.claimed.serialNo} ${result.claimed.card.idolName}** (${result.claimed.card.groupName} - ${result.claimed.card.era})`
     });
   } catch (err) {
     console.error(err);
