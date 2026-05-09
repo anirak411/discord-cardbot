@@ -1,6 +1,6 @@
-import { SlashCommandBuilder } from "discord.js";
+import { SlashCommandBuilder, AttachmentBuilder } from "discord.js";
 import { prisma } from "../lib/prisma.js";
-import { rollRarity, generateCopyByRarity, buildDropMessage, buildDropButtons, ensureUser } from "../lib/game.js";
+import { rollRarity, generateCopyByRarity, buildDropMessage, buildDropButtons, ensureUser, renderDropStrip } from "../lib/game.js";
 
 const dropCooldownSeconds = Number(process.env.DROP_COOLDOWN_SECONDS ?? 45);
 const dropExpirySeconds = Number(process.env.DROP_EXPIRY_SECONDS ?? 60);
@@ -42,9 +42,13 @@ export async function execute(interaction) {
     }
   });
 
+  const dropImage = await renderDropStrip(copies);
+  const attachment = new AttachmentBuilder(dropImage, { name: "drop-strip.jpg" });
+
   const message = await interaction.editReply({
     content: buildDropMessage(copies, interaction.user.id, dropExpirySeconds),
-    components: [buildDropButtons(drop.id, copies)]
+    components: [buildDropButtons(drop.id, copies)],
+    files: [attachment]
   });
 
   await prisma.drop.update({ where: { id: drop.id }, data: { messageId: message.id } });

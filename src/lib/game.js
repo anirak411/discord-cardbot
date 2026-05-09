@@ -1,4 +1,5 @@
 import { ButtonBuilder, ButtonStyle, ActionRowBuilder, EmbedBuilder } from "discord.js";
+import sharp from "sharp";
 import { prisma } from "./prisma.js";
 
 const rarityTable = [
@@ -58,10 +59,47 @@ export function buildDropMessage(copies, authorId, expirySeconds) {
     "",
     ...copies.map((copy, idx) => dropLine(copy, idx)),
     "",
-    copies.map((copy) => copy.card.imageUrl).join(" "),
-    "",
     `Claim using buttons below. Expires in ${expirySeconds}s.`
   ].join("\n");
+}
+
+async function fetchImageBuffer(url) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch image: ${url}`);
+  }
+  return Buffer.from(await response.arrayBuffer());
+}
+
+export async function renderDropStrip(copies) {
+  const cardWidth = 320;
+  const cardHeight = 480;
+  const gap = 20;
+  const padding = 20;
+  const canvasWidth = padding * 2 + cardWidth * 3 + gap * 2;
+  const canvasHeight = padding * 2 + cardHeight;
+
+  const base = sharp({
+    create: {
+      width: canvasWidth,
+      height: canvasHeight,
+      channels: 3,
+      background: "#10131c"
+    }
+  });
+
+  const composites = [];
+  for (let i = 0; i < copies.length; i += 1) {
+    const src = await fetchImageBuffer(copies[i].card.imageUrl);
+    const card = await sharp(src).resize(cardWidth, cardHeight, { fit: "cover" }).jpeg({ quality: 90 }).toBuffer();
+    composites.push({
+      input: card,
+      left: padding + i * (cardWidth + gap),
+      top: padding
+    });
+  }
+
+  return base.composite(composites).jpeg({ quality: 92 }).toBuffer();
 }
 
 function buttonLabelForCopy(copy) {
