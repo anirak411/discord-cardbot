@@ -35,6 +35,7 @@ export async function execute(interaction) {
   const drop = await prisma.drop.create({
     data: {
       channelId: interaction.channelId,
+      createdBy: interaction.user.id,
       slot1CopyId: copies[0].id,
       slot2CopyId: copies[1].id,
       slot3CopyId: copies[2].id,

@@ -107,7 +107,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
       });
 
       const now = new Date();
-      if (user.lastClaimAt) {
+      const isOwnDrop = dropRecord.createdBy === interaction.user.id;
+      if (!isOwnDrop && user.lastClaimAt) {
         const next = new Date(user.lastClaimAt.getTime() + claimCooldownSeconds * 1000);
         if (now < next) {
           const wait = Math.ceil((next.getTime() - now.getTime()) / 1000);
