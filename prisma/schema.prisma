@@ -47,7 +47,7 @@ model CardCopy {
 model Drop {
   id          Int       @id @default(autoincrement())
   channelId   String
-  createdBy   String
+  createdBy   String?
   messageId   String?   @unique
   slot1CopyId Int
   slot2CopyId Int
